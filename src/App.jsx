@@ -786,6 +786,7 @@ function SyndicView() {
 // ═══════════════════════════════════════════════════════════════
 function MoreMenu({ onNavigate, unread }) {
   const items = [
+    { id: "mediation", icon: "🕊️", label: "Médiation CNV", desc: "Résoudre un différend avec un voisin", highlight: true },
     { id: "profile", icon: "👤", label: "Mon profil", desc: "Modifier vos informations" },
     { id: "members", icon: "👥", label: "Annuaire des résidents", desc: `${MOCK_USERS.length} copropriétaires` },
     { id: "notifications", icon: "🔔", label: "Notifications", desc: unread > 0 ? `${unread} non lues` : "Tout est lu", badge: unread },
@@ -810,10 +811,10 @@ function MoreMenu({ onNavigate, unread }) {
 
       {/* Menu items */}
       {items.map(item => (
-        <div key={item.id} onClick={() => onNavigate(item.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${T.border}`, cursor: "pointer" }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{item.icon}</div>
+        <div key={item.id} onClick={() => onNavigate(item.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${T.border}`, cursor: "pointer", ...(item.highlight ? { background: `linear-gradient(135deg, ${T.accent}08, ${T.accent}03)`, margin: "0 -14px", padding: "12px 14px", borderRadius: T.radius, border: `1px solid ${T.accent}25`, marginBottom: 4 } : {}) }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: item.highlight ? `${T.accent}18` : T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>{item.icon}</div>
           <div style={{ flex: 1 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{item.label}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: item.highlight ? T.accent : T.text }}>{item.label}</span>
             <p style={{ margin: 0, fontSize: 11, color: T.textSec }}>{item.desc}</p>
           </div>
           {item.badge > 0 && <span style={{ background: T.danger, color: T.white, fontSize: 10, fontWeight: 700, borderRadius: 10, padding: "2px 7px" }}>{item.badge}</span>}
@@ -955,12 +956,347 @@ function ReglementView({ onBack }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// MÉDIATION CNV (Communication Non Violente)
+// ═══════════════════════════════════════════════════════════════
+const CNV_STEPS = [
+  { id: "observation", icon: "👁️", label: "Observation", color: "#2980B9", desc: "Les faits, sans jugement" },
+  { id: "sentiment", icon: "💚", label: "Sentiment", color: "#27AE60", desc: "Ce que je ressens" },
+  { id: "besoin", icon: "🌱", label: "Besoin", color: "#E67E22", desc: "Mon besoin non satisfait" },
+  { id: "demande", icon: "🤲", label: "Demande", color: "#8E44AD", desc: "Ma demande concrète" },
+];
+
+const MOCK_MEDIATIONS = [
+  { id: 1, withUser: 2, subject: "Bruit de travaux le samedi matin", status: "active", lastMessage: "Il y a 2h", unread: 1, created: "20 mars 2026" },
+  { id: 2, withUser: 5, subject: "Place de parking occupée", status: "resolved", lastMessage: "Il y a 5j", unread: 0, created: "12 mars 2026" },
+];
+
+function MediationListView({ onBack, onNewMediation, onOpenMediation }) {
+  return (
+    <div style={{ minHeight: "100vh", background: T.bg }}>
+      <TopBar title="Médiation CNV" subtitle="Résolution bienveillante des conflits" onBack={onBack} />
+      <div style={{ padding: "14px 16px" }}>
+
+        {/* CNV Explainer */}
+        <div style={{ background: `linear-gradient(135deg, ${T.accent}12, ${T.accent}05)`, border: `1px solid ${T.accent}25`, borderRadius: T.radiusLg, padding: "16px", marginBottom: 16 }}>
+          <h4 style={{ margin: "0 0 8px", fontSize: 14, color: T.accent, fontFamily: T.fontDisplay }}>🕊️ Comment fonctionne la médiation ?</h4>
+          <p style={{ margin: "0 0 10px", fontSize: 12, color: T.text, lineHeight: 1.55 }}>
+            Chaque message passe par un interpréteur de Communication Non Violente (CNV). L'IA restructure vos propos selon 4 étapes pour favoriser l'écoute et la compréhension mutuelle.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {CNV_STEPS.map(s => (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 8px", borderRadius: 8, background: T.white }}>
+                <span style={{ fontSize: 14 }}>{s.icon}</span>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: s.color }}>{s.label}</div>
+                  <div style={{ fontSize: 9.5, color: T.textSec }}>{s.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Btn full variant="accent" onClick={onNewMediation} style={{ marginBottom: 16 }}>🕊️ Demander une médiation</Btn>
+
+        {/* Active mediations */}
+        {MOCK_MEDIATIONS.filter(m => m.status === "active").length > 0 && (
+          <>
+            <p style={{ fontSize: 10, fontWeight: 600, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 8px" }}>Médiations en cours</p>
+            {MOCK_MEDIATIONS.filter(m => m.status === "active").map(med => {
+              const other = MOCK_USERS.find(u => u.id === med.withUser);
+              return (
+                <div key={med.id} onClick={() => onOpenMediation(med)} style={{ background: T.white, borderRadius: T.radius, padding: "12px 14px", marginBottom: 8, boxShadow: T.shadow, cursor: "pointer", border: `1px solid ${T.accent}20` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Avatar name={other.name} color={other.color} size={40} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{other.name}</span>
+                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 10, background: `${T.accent}15`, color: T.accent, fontWeight: 600 }}>En cours</span>
+                        {med.unread > 0 && <span style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: "50%", background: T.accent, color: T.white, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{med.unread}</span>}
+                      </div>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: T.textSec }}>{med.subject}</p>
+                      <span style={{ fontSize: 10, color: T.textMuted }}>{med.lastMessage}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {/* Resolved */}
+        {MOCK_MEDIATIONS.filter(m => m.status === "resolved").length > 0 && (
+          <>
+            <p style={{ fontSize: 10, fontWeight: 600, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.04em", margin: "16px 0 8px" }}>Résolues</p>
+            {MOCK_MEDIATIONS.filter(m => m.status === "resolved").map(med => {
+              const other = MOCK_USERS.find(u => u.id === med.withUser);
+              return (
+                <div key={med.id} style={{ background: T.white, borderRadius: T.radius, padding: "12px 14px", marginBottom: 8, boxShadow: T.shadow, opacity: 0.6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Avatar name={other.name} color={other.color} size={40} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{other.name}</span>
+                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 10, background: T.successBg, color: T.success, fontWeight: 600 }}>✓ Résolue</span>
+                      </div>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: T.textSec }}>{med.subject}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function NewMediationView({ onBack, onCreate }) {
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [subject, setSubject] = useState("");
+  const [description, setDescription] = useState("");
+
+  return (
+    <div style={{ minHeight: "100vh", background: T.bg }}>
+      <TopBar title="Nouvelle médiation" onBack={onBack} />
+      <div style={{ padding: "14px 16px" }}>
+        <div style={{ background: `${T.primary}08`, border: `1px solid ${T.primary}20`, borderRadius: T.radius, padding: "12px 14px", marginBottom: 16 }}>
+          <p style={{ margin: 0, fontSize: 12, color: T.primaryDark, lineHeight: 1.5 }}>
+            <strong>🕊️ La médiation est confidentielle.</strong> Seuls vous, votre voisin et le médiateur IA ont accès à la conversation. Chaque message est reformulé en CNV avant d'être transmis.
+          </p>
+        </div>
+
+        <p style={{ fontSize: 10, fontWeight: 600, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.04em", margin: "0 0 8px" }}>Avec qui souhaitez-vous médier ?</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+          {MOCK_USERS.map(u => (
+            <div key={u.id} onClick={() => setSelectedUser(u.id)} style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+              borderRadius: T.radiusSm, cursor: "pointer",
+              background: selectedUser === u.id ? `${T.primary}08` : T.white,
+              border: `2px solid ${selectedUser === u.id ? T.primary : T.border}`,
+              transition: "all 0.15s",
+            }}>
+              <Avatar name={u.name} color={u.color} size={34} />
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>{u.name}</span>
+                <span style={{ fontSize: 11, color: T.textSec, marginLeft: 6 }}>Apt {u.apt}</span>
+              </div>
+              {selectedUser === u.id && <span style={{ marginLeft: "auto", color: T.primary, fontWeight: 700 }}>✓</span>}
+            </div>
+          ))}
+        </div>
+
+        <Input label="Sujet de la médiation" value={subject} onChange={setSubject} placeholder="Ex: Bruit le week-end, place de parking..." />
+        <Input label="Décrivez la situation (confidentiel)" value={description} onChange={setDescription} placeholder="Expliquez ce qui s'est passé, depuis quand, comment ça vous affecte..." multiline rows={4} />
+
+        <Btn full variant="accent" onClick={() => onCreate && onCreate({ userId: selectedUser, subject, description })} disabled={!selectedUser || !subject.trim()} style={{ marginTop: 8 }}>
+          🕊️ Envoyer la demande de médiation
+        </Btn>
+
+        <p style={{ textAlign: "center", fontSize: 10, color: T.textMuted, marginTop: 12, lineHeight: 1.5 }}>
+          Votre voisin recevra une invitation à participer à la médiation. Il pourra accepter ou décliner.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function MediationChatView({ onBack, mediation }) {
+  const other = MOCK_USERS.find(u => u.id === mediation.withUser);
+  const [input, setInput] = useState("");
+  const [cnvResult, setCnvResult] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [messages, setMessages] = useState([
+    { id: 0, role: "mediator", text: `Bienvenue dans cet espace de médiation entre vous et ${other.name}.\n\nJe suis votre médiateur IA. Mon rôle est de faciliter le dialogue en traduisant chaque message en Communication Non Violente (CNV).\n\n🔒 Cet espace est confidentiel.\n📝 Chaque message sera reformulé selon les 4 étapes de la CNV avant d'être transmis.\n✅ Vous devez valider la reformulation avant envoi.\n\nSujet : "${mediation.subject}"\n\nQuand vous êtes prêt(e), exprimez ce que vous ressentez concernant cette situation.` },
+  ]);
+  const endRef = useRef(null);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, cnvResult]);
+
+  const processCNV = async () => {
+    if (!input.trim()) return;
+    setIsProcessing(true); setCnvResult(null);
+    const original = input;
+    setInput("");
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514", max_tokens: 1000,
+          system: `Tu es un médiateur expert en Communication Non Violente (CNV) de Marshall Rosenberg. Tu interviens dans un conflit de voisinage en copropriété.
+
+Contexte du conflit : "${mediation.subject}"
+
+L'utilisateur va t'envoyer un message brut destiné à son voisin ${other.name} (Apt ${other.apt}).
+
+Tu dois reformuler ce message en suivant STRICTEMENT les 4 étapes de la CNV :
+1. OBSERVATION : les faits concrets, sans jugement ni interprétation
+2. SENTIMENT : l'émotion ressentie (pas "je me sens jugé" qui est une interprétation, mais "je me sens triste/frustré/inquiet")
+3. BESOIN : le besoin fondamental non satisfait (tranquillité, respect, coopération, harmonie...)
+4. DEMANDE : une demande concrète, positive, réalisable, négociable
+
+Règles :
+- Préserve le fond du message original
+- Élimine tout jugement, accusation, généralisation ("toujours", "jamais")
+- Transforme les "tu" accusateurs en "je" expressifs
+- La demande doit être formulée positivement (ce que la personne veut, pas ce qu'elle ne veut pas)
+
+IMPORTANT: Réponds UNIQUEMENT en JSON valide sans backticks :
+{"observation":"...","sentiment":"...","besoin":"...","demande":"...","complet":"Le message complet reformulé en un seul paragraphe fluide intégrant les 4 étapes"}`,
+          messages: [{ role: "user", content: original }],
+        }),
+      });
+      const data = await r.json();
+      const text = data.content.filter(b => b.type === "text").map(b => b.text).join("");
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      setCnvResult({ original, ...parsed });
+    } catch {
+      setCnvResult({
+        original,
+        observation: "Quand j'observe cette situation...",
+        sentiment: "Je me sens préoccupé(e)...",
+        besoin: "Car j'ai besoin de tranquillité...",
+        demande: "Serait-il possible d'en discuter ensemble ?",
+        complet: "Quand j'observe cette situation, je me sens préoccupé(e), car j'ai besoin de tranquillité. Serait-il possible d'en discuter ensemble ?",
+      });
+    }
+    setIsProcessing(false);
+  };
+
+  const sendCNV = () => {
+    if (!cnvResult) return;
+    setMessages(m => [...m,
+      { id: m.length, role: "user", text: cnvResult.complet, original: cnvResult.original, cnv: cnvResult },
+    ]);
+    setCnvResult(null);
+    // Simulate mediator follow-up
+    setTimeout(() => {
+      setMessages(m => [...m,
+        { id: m.length, role: "mediator", text: `Merci pour cette expression. Votre message a été transmis à ${other.name} dans sa forme CNV.\n\nJe note que votre besoin principal est lié à : ${cnvResult.besoin.toLowerCase()}\n\nAttendons la réponse de ${other.name} pour continuer le dialogue.` },
+      ]);
+    }, 1500);
+  };
+
+  const rejectCNV = () => {
+    setInput(cnvResult.original);
+    setCnvResult(null);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div style={{ background: T.white, borderBottom: `1px solid ${T.border}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, position: "sticky", top: 0, zIndex: 100 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: T.text }}>←</button>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: `${T.accent}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🕊️</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>Médiation avec {other.name}</div>
+          <div style={{ fontSize: 10, color: T.accent, fontWeight: 500 }}>🔒 Confidentiel · Filtre CNV actif</div>
+        </div>
+        <Avatar name={other.name} color={other.color} size={30} />
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflow: "auto", padding: "12px 14px" }}>
+        {messages.map(msg => (
+          <div key={msg.id} style={{ marginBottom: 14 }}>
+            {msg.role === "mediator" ? (
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, marginTop: 2 }}>🕊️</div>
+                <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}18`, borderRadius: "4px 14px 14px 14px", padding: "10px 12px", maxWidth: "85%", fontSize: 12.5, lineHeight: 1.6, color: T.text, whiteSpace: "pre-wrap" }}>{msg.text}</div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <div style={{ maxWidth: "85%" }}>
+                    <div style={{ background: T.primary, color: T.white, borderRadius: "14px 14px 4px 14px", padding: "10px 12px", fontSize: 12.5, lineHeight: 1.6 }}>{msg.text}</div>
+                    {msg.cnv && (
+                      <div style={{ marginTop: 4, padding: "6px 10px", background: `${T.primary}06`, borderRadius: 8, border: `1px dashed ${T.primary}20` }}>
+                        <div style={{ fontSize: 9, color: T.textMuted, marginBottom: 3 }}>Votre message original :</div>
+                        <div style={{ fontSize: 11, color: T.textSec, fontStyle: "italic" }}>« {msg.original} »</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {isProcessing && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🕊️</div>
+            <div style={{ background: `${T.accent}08`, border: `1px solid ${T.accent}18`, borderRadius: "4px 14px 14px 14px", padding: "10px 12px" }}>
+              <div style={{ fontSize: 11, color: T.accent, fontWeight: 600, marginBottom: 4 }}>Reformulation CNV en cours...</div>
+              <TypingDots />
+            </div>
+          </div>
+        )}
+
+        {/* CNV Preview Card */}
+        {cnvResult && (
+          <div style={{ background: T.white, borderRadius: T.radiusLg, boxShadow: T.shadowLg, overflow: "hidden", marginBottom: 14, border: `2px solid ${T.accent}30` }}>
+            <div style={{ background: `linear-gradient(135deg, ${T.accent}15, ${T.accent}08)`, padding: "10px 14px", borderBottom: `1px solid ${T.accent}20` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.accent }}>🕊️ Reformulation CNV de votre message</div>
+              <div style={{ fontSize: 10, color: T.textSec, marginTop: 2 }}>Vérifiez et validez avant envoi à {other.name}</div>
+            </div>
+
+            {/* Original */}
+            <div style={{ padding: "10px 14px", background: `${T.danger}05`, borderBottom: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: T.danger, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 3 }}>Votre message original</div>
+              <div style={{ fontSize: 12, color: T.text, fontStyle: "italic" }}>« {cnvResult.original} »</div>
+            </div>
+
+            {/* 4 CNV Steps */}
+            <div style={{ padding: "10px 14px" }}>
+              {CNV_STEPS.map(step => (
+                <div key={step.id} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `${step.color}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>{step.icon}</div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: step.color, textTransform: "uppercase", letterSpacing: "0.03em" }}>{step.label}</div>
+                    <div style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>{cnvResult[step.id]}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Final message */}
+            <div style={{ padding: "10px 14px", background: `${T.success}06`, borderTop: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: T.success, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 3 }}>Message qui sera transmis</div>
+              <div style={{ fontSize: 13, color: T.text, lineHeight: 1.55, fontWeight: 500 }}>{cnvResult.complet}</div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 8, padding: "10px 14px" }}>
+              <Btn variant="secondary" small onClick={rejectCNV} style={{ flex: 1 }}>✏️ Modifier</Btn>
+              <Btn variant="accent" small onClick={sendCNV} style={{ flex: 2 }}>✓ Valider et envoyer</Btn>
+            </div>
+          </div>
+        )}
+
+        <div ref={endRef} />
+      </div>
+
+      {/* Input */}
+      {!cnvResult && (
+        <div style={{ padding: "8px 14px 10px", background: T.white, borderTop: `1px solid ${T.border}` }}>
+          <div style={{ fontSize: 10, color: T.accent, fontWeight: 500, marginBottom: 5, textAlign: "center" }}>🕊️ Votre message sera reformulé en CNV avant envoi</div>
+          <div style={{ display: "flex", gap: 7 }}>
+            <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); processCNV(); } }} placeholder="Exprimez-vous librement..." rows={1} style={{ flex: 1, padding: "9px 12px", borderRadius: T.radiusSm, border: `2px solid ${T.border}`, background: T.bg, fontSize: 13, fontFamily: T.font, resize: "none", outline: "none", maxHeight: 80 }} />
+            <button onClick={processCNV} disabled={isProcessing || !input.trim()} style={{ width: 38, height: 38, borderRadius: "50%", border: "none", background: input.trim() ? `linear-gradient(135deg, ${T.accent}, #B8862F)` : T.border, color: T.white, fontSize: 16, cursor: input.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function VoisinSerein() {
   const [screen, setScreen] = useState("welcome");
   const [tab, setTab] = useState("forum");
   const [composerOpen, setComposerOpen] = useState(false);
+  const [activeMediation, setActiveMediation] = useState(null);
   const unread = MOCK_NOTIFS.filter(n => !n.read).length;
 
   const goMain = () => setScreen("main");
@@ -968,6 +1304,7 @@ export default function VoisinSerein() {
   // Subpages from More menu
   const handleMoreNav = id => {
     if (id === "logout") setScreen("welcome");
+    else if (id === "mediation") setScreen("mediationList");
     else if (["profile","members","notifications","settings","reglement","help"].includes(id)) setScreen(id);
   };
 
@@ -988,6 +1325,10 @@ export default function VoisinSerein() {
       {screen === "notifications" && <NotificationsView onBack={() => setScreen("main")} />}
       {screen === "settings" && <SettingsView onBack={() => setScreen("main")} />}
       {screen === "reglement" && <ReglementView onBack={() => setScreen("main")} />}
+
+      {screen === "mediationList" && <MediationListView onBack={() => setScreen("main")} onNewMediation={() => setScreen("newMediation")} onOpenMediation={id => { setActiveMediation(id); setScreen("mediationChat"); }} />}
+      {screen === "newMediation" && <NewMediationView onBack={() => setScreen("mediationList")} onCreate={() => { setActiveMediation(1); setScreen("mediationChat"); }} />}
+      {screen === "mediationChat" && activeMediation && <MediationConversation mediationId={activeMediation} onBack={() => setScreen("mediationList")} />}
 
       {screen === "main" && (
         <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
